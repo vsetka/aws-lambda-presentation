@@ -39,13 +39,14 @@ html,
 body {
   width: 100%;
   height: 100%;
+  color: #FFBC0D;
   overflow: hidden; }
 
 body {
   position: relative;
   line-height: 1;
-  background-color: #fff;
-  color: #000; }
+  background-color: #000c32;
+  color: #FFBC0D; }
 
 /*********************************************
  * VIEW FRAGMENTS
