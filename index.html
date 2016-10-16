@@ -24,21 +24,337 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-				<section data-background-color="#000c32">
-					<h2 style="color: rgb(255, 188, 13);">AWS Lambda functions - what do they do? Do they do things? Let's find out!</h2>
+				<section data-background-color="white">
+					<h2>AWS Lambda functions</h2>
+					<h3>What do they do? Do they do things? Let's find out!</h3>
+					<br/>
+					<p>
+						<small>A <a href="https://vsetka.github.io/aws-lambda-presentation">talk</a> by Vladimir Šetka</small>
+						<br/>
+						<small>The Software Engineering Department of <a href="http://www.billigflieger.de">billigflieger.de</a></small>
+					</p>
 				</section>
-				<section data-background-color="#000c32">
-					<h2 style="color: rgb(255, 188, 13);">AWS Lambda overview</h2>
-					<div style="color: rgb(255, 188, 13); text-align: left;">
+				<section>
+					<section data-background-color="white">
+						<h2>What is AWS Lambda? How does it work? Why should you care to know more?</h2>
+					</section>
+					<section>
+						<h2>Lambda is a new type of compute abstraction, a building block of serverless architecture</h2>
+						<img style="border: 1px" data-src="images/lambda.png" alt="Lambda">
+						<aside class="notes">
+							We went from physical servers, to Virtual Machines to VMs in the cloud with high availability and locality to containerization technologies such as Docker.<br/>
+							Virtual Machines as unit of scale abstraced away the hardware.<br/>
+							Containers as unit of scale abstraced away the environment (Operating System).<br/>
+							Now, we have reached a new type of compute abstraction that provides the next level of granularity on the aaS platforms. It abstracts away the language runtime<br/>
+							Lambda is a user-defined function that can perform a small operation, where AWS manages provisioning and scheduling how it's run.
+							Giving up our control of the runtime is what makes Lambda scaling possible. AWS can set up a standardized environment where we only provide the logic. It's beautiful.
+							<ul>
+								<li>It's multitenant but containerized and spun up on-demand. It's purpose is to quickly handle a processing request and go away, like Mr. Meeseeks</li>
+								<li>It's stateless and even though a thawed instance can retain variables, you should not rely on it. Use external services to store state.</li>
+								<li>We have no control over the environment and runtime, but the benefit is that AWS can then automatically take care of the Ops for us.</li>
+								<li>Language support: JavaScript (4.3), Java, Python</li>
+								<li>Suited for short, stateless operations</li>
+								<li>Work best for spiky traffic (if the individual operations don't take too long to process)</li>
+							</ul>
+						</aside>
+					</section>
+					<section>
+						<h2>Under the hood</h2>
+						<ul>
+							<li>Containerized: spun up on-demand
+								<ul>
+									<li>Linux VMs</li>
+									<li>Specialized containers</li>
+									<li>Isolated runtimes (Node.js, Java, Python)</li>
+									<li>Sandboxed (cgroups, seccomp)</li>
+								</ul>
+							</li>
+							<li>Stateless, no persistence
+								<ul>
+									<li>Instances Hibernate/freeze and thaw</li>
+									<li>Memory state preservation not guaranteed</li>
+								</ul>
+							</li>
+						</ul>
+						<aside class="notes">
+							So, it's a multi tenant architecture, it runs on Linux VMs inside a special container (not Docker) that takes care of network isolation and the process sandboxing using 
+							cgroups and seccomp => process can only make limited system calls (exit, sigreturn and read + write to already open file descriptors). If you run the container
+							with an access to a VPC, you cannot make outward calls.
+							The Lambda runtime implements predictive capacity management which is a purpose-built, massively scaled language runtime delivery service. It makes sure there will
+							be a Lambda instance to handle any incoming requests, in theory. It's still rusty and sometimes it can fail.
+						</aside>
+					</section>
+					<section>
+						<h2>Why should you care about serverless?</h2>
+						<p class="fragment fade-up" style="font-size: 600%">$</p>
+						<aside class="notes">
+							So, Lambda is the building block of this new, emerging architecture style, serverless computing, an evolution of microservice design. Instead of a service, handling
+							a group of tasks, we have Lambda functions that handle a SINGLE type of task. For a developer, it's a dream come true. It makes it possible to push aside the
+							management and focuse on writing good code and implementing business logic.
+							It's a reactive, event driven architecture design that scales infinitely, reduces costs and saves time on Ops.
+						</aside>
+					</section>
+					<section>
+						<h2>AWS Lambda overview</h2>
 						<ul>
 							<li>Containerized: spun up on-demand</li>
-							<li>Stateless, no persistence (Mr. Meeseeks)</li>
+							<li>Stateless, no persistence</li>
 							<li>No control over the environment</li>
 							<li>Language support: JavaScript (Node), Java, Python</li>
 							<li>Suited for short, stateless operations</li>
 							<li>Work best for spiky traffic</li>
 						</ul>
-					</div>
+						<aside class="notes">
+							<ul>
+								<li>It's multitenant but containerized and spun up on-demand. It's purpose is to quickly handle a processing request and go away, like Mr. Meeseeks</li>
+								<li>It's stateless and even though a thawed instance can retain variables, you should not rely on it. Use external services to store state.</li>
+								<li>We have no control over the environment and runtime, but the benefit is that AWS can then automatically take care of the Ops for us.</li>
+								<li>Language support: JavaScript (4.3), Java, Python</li>
+								<li>Suited for short, stateless operations</li>
+								<li>Work best for spiky traffic (if the individual operations don't take too long to process)</li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+				<section>
+					<section data-background-color="white">
+						<h2>Case study: Ranking thousands of data rows in realtime</h2>
+					</section>
+					<section>
+						<h2>Problem</h2>
+						<ul>
+							<li>Ranking flight optimality</li>
+							<li>Dozens of search requests, 20 providers, 200-2000 results per provider</li>
+							<li>Backend in Node.js (single thread)</li>
+						</ul>
+					</section>
+					<section>
+						<h2>Solution 1</h2>
+						<ul>
+							<li>VMs in multiple zones</li>
+							<li>Clusters of workers</li>
+							<li>Messaging over RabbitMQ</li>
+						</ul>
+					</section>
+					<section>
+						<h2>Solution 2</h2>
+						<ul>
+							<li>Worker as a Lambda function</li>
+							<li>Direct invocation</li>
+						</ul>
+					</section>
+					<section>
+						<h2>5.364.000 invocations per month (estimated)</h2>
+						<img style="border: 1px" data-src="images/invocations.png" alt="Lambda">
+					</section>
+					<section>
+						<h2>~1 s duration per invocation on average</h2>
+						<img style="border: 1px" data-src="images/durations.png" alt="Lambda">
+					</section>
+					<section>
+						<h2>The good stuff</h2>
+						<ul>
+							<li>Function as a deployment and scaling unit</li>
+							<li>Not dealing with machines, VMs or containers, simplified deployment</li>
+							<li>Reduced operational cost (16% of VM solution)</li>
+							<li>Reduced deployment complexity (provisioning)</li>
+							<li>Automatic horizontal scaling with quick reaction to traffic spikes</li>
+							<li>Forces more pure functional architecture</li>
+							<li>First million invokes are free</li>
+						</ul>
+					</section>
+					<section>
+						<h2>The bad stuff</h2>
+						<ul>
+							<li>Possible multi-tenancy issues (security, robustness)</li>
+							<li>Configuration must be externalized</li>
+							<li>Ecosystem lock-in</li>
+							<li>Vague restrictions, behaviour, documentation</li>
+							<li>Monitoring and debugging options limited</li>
+							<li>Startup costs</li>
+							<li>Random timeouts (corrupted instances) ~1%</li>
+						</ul>
+						<aside class="notes">
+							<ul>
+								<li>Sometimes multitenant solutions can have problems with security (one customer being able to see another’s data), robustness (an error in one customer’s software causing a failure in a different customer’s software) and performance (a high load customer causing another to slow down.)</li>
+								<li>Request to config server on each request, can't cache config in memory. Either that or passing in config, creating invoke overhead.</li>
+								<li>The differences between AWS Lambda, Google Cloud Functions and Microsoft Azure Functions may be relatively small, but you’re still not going to be able to directly hook up the latter 2 vendor implementations directly to your AWS Kinesis stream. This means that moving, or porting, your code from one solution to another isn’t going to be possible without also moving other chunks of your infrastructure too. Mitigated by frameworks such as Serverless</li>
+								<li>For example, instances hibernate after 10-20 min inactivity but it's not explicitely stated anywhere how long. It's unreliable. Same thing with CPU/Memory relationship in settings. Trying out is the best way. Sometimes more memory (=more CPU) means actually less overall costs.</li>
+								<li>Monitoring and debugging options limited</li>
+								<li>Startup costs, it takes some time for a fresh instance to start</li>
+								<li>Processes can end up in an undefined state due to a programming error, or hibernation. Subsequent invocations of such containers produce timeouts, no matter the inputs. Only way to clean up the containers is to not have requests on them for some time, or redeploy the function</li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+				<section>
+					<section data-background-color="white">
+						<h2>Creating a Lambda function</h2>
+					</section>
+					<section>
+						<h2>Function example</h2><br/>
+						<pre class="javascript"><code class="hljs">'use strict';
+console.log('Loading function');
+
+exports.handler = (event, context, callback) => {
+    // event is our payload
+    console.log('first param', event.param1);
+    console.log('second param', event.param2);
+
+    // context provides extra information
+    console.log('', context);
+
+    // after we're done, we call the callback
+    callback(null, event.key1);
+};</code></pre>
+					</section>
+					<section>
+						<h2>Packaging</h2>
+						<ul>
+							<li>Zip files (with dependencies)</li>
+							<li>Upload (S3, aws-cli, Web GUI, Jenkins plugin...)</li>
+							<li>Native dependencies are fine, statically and dynamically linked (and executing binaries)</li>
+							<li>Available seconds after deploy / upload</li>
+						</ul>
+						<pre class="javascript"><code class="hljs">filename.js
+package.json
+node_modules/async
+node_modules/async/lib
+node_modules/async/lib/async.js
+node_modules/async/package.json</code></pre>
+					</section>
+					<section>
+						<h2>Deployment - Create</h2>
+						<ul>
+							<li>Define region and name the function</li>
+							<li>IAM Execution role ensures proper permission context</li>
+							<li>Specify hander (filename + function name)</li>
+							<li>Specify runtime</li>
+						</ul>
+						<pre class="javascript"><code class="hljs">aws lambda create-function \
+--region eu-central-1 \
+--function-name my-function \
+--zip-file fileb://my-function.zip \
+--role arn:aws:iam::472899049124:role/my-lambda-execution-role \
+--handler filename.handler \
+--runtime nodejs4.3</code></pre>
+					</section>
+					<section>
+						<h2>Deployment - Update</h2>
+						<ul>
+							<li>Specify function to be updated</li>
+							<li>Support for versioning and version aliasing (green / blue deployment)</li>
+						</ul>
+						<pre class="javascript"><code class="hljs">aws lambda update-function-code \
+--function-name bas-ranking-lambda \
+--zip-file fileb://bas-ranking-lambda.zip \
+--publish</code></pre>
+					</section>
+					<section>
+						<h2>Green-Blue Deployment Switch</h2>
+						<img style="border: 1px" data-src="images/versioning.png" alt="Lambda">
+					</section>
+					<section>
+						<h2>Execution</h2>
+						<ul>
+							<li>Triggered by an event source: S3, Kinesis, DynamoDB, Cloudtrail, SNS</li>
+							<li>Invoked directly through AWS SDK</li>
+							<li>Invoke via HTTP Gateway (can throttle individual users or requests, protects against DDoS, provides a caching layer)</li>
+							<li>Scheduled</li>
+						</ul>
+					</section>
+				</section>
+				<section>
+					<section data-background-color="white">
+						<h2>Best practices</h2>
+					</section>
+					<section>
+						<h2>Most important points</h2>
+						<ul>
+							<li>Write pure functions, remain stateless</li>
+							<li>Extract logic to a lib, code in handler minimal</li>
+							<li>Avoid variables outside the scope of the handler</li>
+							<li>Ensure +rx permissions on your files</li>
+							<li>Minimize the use of startup code</li>
+							<li>Use CloudWatch monitoring to view and optimize request latencies</li>
+							<li>Delete old Lambda functions that are no longer used</li>
+						</ul>
+						<aside class="notes">
+							<ul>
+								<li>Write pure functions, remain stateless</li>
+								<li>Don't write a lot of code in the handler so you maximize reusability of your code. Also makes unit testing easier</li>
+								<li>refresh between invocations not guaranteed</li>
+								<li>Ensure +rx permissions on your files in the uploaded ZIP so Lambda can execute code on your behalf</li>
+								<li>Minimize the use of startup code not directly related to processing the current event (for speed and cost)</li>
+								<li>Use CloudWatch monitoring to view and optimize request latencies</li>
+								<li>Delete old Lambda functions that are no longer used</li>
+							</ul>
+						</aside>
+					</section>
+					<section>
+						<h2>Minimal handler</h2>
+						<pre class="javascript"><code class="hljs">exports.handler = (event, context, callback) => {
+  let lib = require('myLib');
+
+  lib.do(event.params)
+    .then((res) => callback(null, res));
+};</code></pre>
+					</section>
+					<section>
+						<h2>Lambda Client wrapper</h2>
+						<pre class="javascript"><code class="hljs">let aws = require('aws-sdk');
+
+module.exports.do = (data) => {
+  aws.lambda(data);
+};</code></pre>
+					</section>
+					<section>
+						<h2>Client execution</h2>
+						<pre class="javascript"><code class="hljs">let client;
+
+if (config.rpc) {
+  client = require('./rpc.js');
+} else if (config.lambda) {
+  client = require('./lambda.js');
+}
+
+client.do({ some: 'data' });</code></pre>
+					</section>
+				</section>
+				<section>
+					<section data-background-color="white">
+						<h2>Where to go from here?</h2>
+					</section>
+					<section>
+						<h2>Interesting use cases</h2>
+						<ul>
+							<li><a href="https://jimpick.com/2016/05/05/introducing-lambda-comments">Lambda blog comments</a></li>
+							<li><a href="https://github.com/claudiajs/claudia-bot-builder">Bots</a></li>
+							<li><a href="http://hecodes.com/2016/09/building-serverless-mesh-processing-microservice-node-js">Mesh processing microservice</a></li>
+							<li><a href="https://developer.amazon.com/alexa">Amazon Alexa</a></li>
+						</ul>
+					</section>
+					<section>
+						<h2>Articles</h2>
+						<ul>
+							<li><a href="https://aws.amazon.com/blogs/compute/going-serverless-migrating-an-express-application-to-amazon-api-gateway-and-aws-lambda">Migrating an express app to Lambda</a></li>
+							<li><a href="https://claudiajs.com/tutorials/designing-testable-lambdas.html">Testable Lambdas</a></li>
+							<li><a href="http://martinfowler.com/articles/serverless.html">State of the Union - Serverless</a></li>
+							<li><a href="https://forums.aws.amazon.com/thread.jspa?threadID=229296&start=25&tstart=0">Lambda timeout issues</a></li>
+							<li><a href="http://theburningmonk.com/2016/05/aws-lambda-constant-timeout-when-using-bluebird-promise/">More on timeouts</a></li>
+						</ul>
+					</section>
+					<section>
+						<h2>Check out the alternatives</h2>
+						<ul>
+							<li>OpenWhisk - Available on IBM's Bluemix cloud</li>
+							<li>Google Cloud Functions</li>
+							<li>Azure Functions</li> 
+						</ul>
+					</section>
+					<section>
+						<h1>Thank you</h1>
+					</section>
 				</section>
 			</div>
 		</div>
