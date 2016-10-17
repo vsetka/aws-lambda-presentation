@@ -46,16 +46,8 @@
 							Virtual Machines as unit of scale abstraced away the hardware.<br/>
 							Containers as unit of scale abstraced away the environment (Operating System).<br/>
 							Now, we have reached a new type of compute abstraction that provides the next level of granularity on the aaS platforms. It abstracts away the language runtime<br/>
-							Lambda is a user-defined function that can perform a small operation, where AWS manages provisioning and scheduling how it's run.
+							Lambda is a user-defined function that can perform a small operation, where AWS manages provisioning and scheduling how it's run.<br/>
 							Giving up our control of the runtime is what makes Lambda scaling possible. AWS can set up a standardized environment where we only provide the logic. It's beautiful.
-							<ul>
-								<li>It's multitenant but containerized and spun up on-demand. It's purpose is to quickly handle a processing request and go away, like Mr. Meeseeks</li>
-								<li>It's stateless and even though a thawed instance can retain variables, you should not rely on it. Use external services to store state.</li>
-								<li>We have no control over the environment and runtime, but the benefit is that AWS can then automatically take care of the Ops for us.</li>
-								<li>Language support: JavaScript (4.3), Java, Python</li>
-								<li>Suited for short, stateless operations</li>
-								<li>Work best for spiky traffic (if the individual operations don't take too long to process)</li>
-							</ul>
 						</aside>
 					</section>
 					<section>
@@ -77,10 +69,10 @@
 							</li>
 						</ul>
 						<aside class="notes">
-							So, it's a multi tenant architecture, it runs on Linux VMs inside a special container (not Docker) that takes care of network isolation and the process sandboxing using 
-							cgroups and seccomp => process can only make limited system calls (exit, sigreturn and read + write to already open file descriptors). If you run the container
-							with an access to a VPC, you cannot make outward calls.
-							The Lambda runtime implements predictive capacity management which is a purpose-built, massively scaled language runtime delivery service. It makes sure there will
+							So, it's a multi tenant architecture, it runs on Linux VMs inside a special container (not Docker) that takes care of network isolation and the process sandboxing using<br/> 
+							cgroups and seccomp => process can only make limited system calls (exit, sigreturn and read + write to already open file descriptors). If you run the container<br/>
+							with an access to a VPC, you cannot make outward calls.<br/>
+							The Lambda runtime implements predictive capacity management which is a purpose-built, massively scaled language runtime delivery service. It makes sure there will<br/>
 							be a Lambda instance to handle any incoming requests, in theory. It's still rusty and sometimes it can fail.
 						</aside>
 					</section>
@@ -88,9 +80,9 @@
 						<h2>Why should you care about serverless?</h2>
 						<p class="fragment fade-up" style="font-size: 600%">$</p>
 						<aside class="notes">
-							So, Lambda is the building block of this new, emerging architecture style, serverless computing, an evolution of microservice design. Instead of a service, handling
-							a group of tasks, we have Lambda functions that handle a SINGLE type of task. For a developer, it's a dream come true. It makes it possible to push aside the
-							management and focuse on writing good code and implementing business logic.
+							So, Lambda is the building block of this new, emerging architecture style, serverless computing, an evolution of microservice design. Instead of a service, handling<br/>
+							a group of tasks, we have Lambda functions that handle a SINGLE type of task. For a developer, it's a dream come true. It makes it possible to push aside the<br/>
+							management and focuse on writing good code and implementing business logic.<br/>
 							It's a reactive, event driven architecture design that scales infinitely, reduces costs and saves time on Ops.
 						</aside>
 					</section>
@@ -102,7 +94,7 @@
 							<li>No control over the environment</li>
 							<li>Language support: JavaScript (Node), Java, Python</li>
 							<li>Suited for short, stateless operations</li>
-							<li>Work best for spiky traffic</li>
+							<li>Work best if traffic is not too spiky</li>
 						</ul>
 						<aside class="notes">
 							<ul>
@@ -111,7 +103,7 @@
 								<li>We have no control over the environment and runtime, but the benefit is that AWS can then automatically take care of the Ops for us.</li>
 								<li>Language support: JavaScript (4.3), Java, Python</li>
 								<li>Suited for short, stateless operations</li>
-								<li>Work best for spiky traffic (if the individual operations don't take too long to process)</li>
+								<li>Work best for non-spiky traffic (if the individual operations don't take too long to process)</li>
 							</ul>
 						</aside>
 					</section>
@@ -124,7 +116,7 @@
 						<h2>Problem</h2>
 						<ul>
 							<li>Ranking flight optimality</li>
-							<li>Dozens of search requests, 20 providers, 200-2000 results per provider</li>
+							<li>Dozen search requests, 20 providers, 200-2000 results per provider</li>
 							<li>Backend in Node.js (single thread)</li>
 						</ul>
 					</section>
@@ -366,6 +358,7 @@ client.do({ some: 'data' });</code></pre>
 			// More info https://github.com/hakimel/reveal.js#configuration
 			Reveal.initialize({
 				history: true,
+				controls: false,
 
 				// More info https://github.com/hakimel/reveal.js#dependencies
 				dependencies: [
